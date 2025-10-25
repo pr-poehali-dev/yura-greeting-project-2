@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 import Icon from '@/components/ui/icon';
 import {
   Dialog,
@@ -10,6 +11,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 interface Element {
   id: string;
@@ -18,6 +24,9 @@ interface Element {
   x: number;
   y: number;
   href?: string;
+  fontSize?: number;
+  color?: string;
+  fontWeight?: number;
 }
 
 interface VisualBuilderProps {
@@ -31,16 +40,19 @@ export default function VisualBuilder({ onSave, backgroundColor, onBackgroundCha
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [newElementType, setNewElementType] = useState<'text' | 'link' | 'image'>('text');
   const [newElementContent, setNewElementContent] = useState('');
   const [newElementHref, setNewElementHref] = useState('');
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     const element = elements.find(el => el.id === id);
     if (!element) return;
 
     setDraggingId(id);
+    setSelectedElement(id);
     setDragOffset({
       x: e.clientX - element.x,
       y: e.clientY - element.y,
@@ -72,6 +84,9 @@ export default function VisualBuilder({ onSave, backgroundColor, onBackgroundCha
       content: newElementContent,
       x: 100,
       y: 100,
+      fontSize: 16,
+      color: '#ffffff',
+      fontWeight: 400,
       ...(newElementType === 'link' && { href: newElementHref }),
     };
 
@@ -79,6 +94,17 @@ export default function VisualBuilder({ onSave, backgroundColor, onBackgroundCha
     setShowAddDialog(false);
     setNewElementContent('');
     setNewElementHref('');
+  };
+
+  const updateElementStyle = (id: string, updates: Partial<Element>) => {
+    setElements(elements.map(el =>
+      el.id === id ? { ...el, ...updates } : el
+    ));
+  };
+
+  const deleteElement = (id: string) => {
+    setElements(elements.filter(el => el.id !== id));
+    setSelectedElement(null);
   };
 
   const generateCode = () => {
@@ -90,12 +116,14 @@ export default function VisualBuilder({ onSave, backgroundColor, onBackgroundCha
     html += '  <div class="canvas">\n';
 
     elements.forEach(el => {
+      const style = `left: ${el.x}px; top: ${el.y}px; font-size: ${el.fontSize || 16}px; color: ${el.color || '#fff'}; font-weight: ${el.fontWeight || 400};`;
+      
       if (el.type === 'text') {
-        html += `    <div class="element element-${el.id}" style="left: ${el.x}px; top: ${el.y}px;">${el.content}</div>\n`;
+        html += `    <div class="element element-${el.id}" style="${style}">${el.content}</div>\n`;
       } else if (el.type === 'link') {
-        html += `    <a href="${el.href || '#'}" class="element element-${el.id}" style="left: ${el.x}px; top: ${el.y}px;">${el.content}</a>\n`;
+        html += `    <a href="${el.href || '#'}" class="element element-${el.id}" style="${style}">${el.content}</a>\n`;
       } else if (el.type === 'image') {
-        html += `    <img src="${el.content}" class="element element-${el.id}" style="left: ${el.x}px; top: ${el.y}px;" alt="Изображение" />\n`;
+        html += `    <img src="${el.content}" class="element element-${el.id}" style="${style}" alt="Изображение" />\n`;
       }
     });
 
@@ -126,7 +154,6 @@ body {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(155, 135, 245, 0.3);
   border-radius: 8px;
-  color: #fff;
   cursor: move;
   user-select: none;
   transition: all 0.2s ease;
@@ -139,17 +166,19 @@ body {
 
 a.element {
   text-decoration: none;
-  color: #9b87f5;
 }
 
 img.element {
   max-width: 200px;
   height: auto;
   background: transparent;
+  padding: 0;
 }`;
 
     onSave(html, css);
   };
+
+  const selectedEl = elements.find(el => el.id === selectedElement);
 
   return (
     <div className="h-full flex flex-col">
@@ -195,22 +224,111 @@ img.element {
         style={{ background: backgroundColor }}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
+        onClick={() => setSelectedElement(null)}
       >
         {elements.map(el => (
           <div
             key={el.id}
-            className="absolute p-3 bg-white/10 border border-primary/30 rounded-lg cursor-move select-none hover:bg-white/15 transition-all"
-            style={{ left: el.x, top: el.y }}
+            className={`absolute p-3 bg-white/10 border rounded-lg cursor-move select-none hover:bg-white/15 transition-all ${
+              selectedElement === el.id ? 'border-primary ring-2 ring-primary/50' : 'border-primary/30'
+            }`}
+            style={{ 
+              left: el.x, 
+              top: el.y,
+              fontSize: `${el.fontSize || 16}px`,
+              color: el.color || '#ffffff',
+              fontWeight: el.fontWeight || 400,
+            }}
             onMouseDown={(e) => handleMouseDown(el.id, e)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedElement(el.id);
+            }}
           >
-            {el.type === 'text' && <span className="text-white">{el.content}</span>}
+            {el.type === 'text' && <span>{el.content}</span>}
             {el.type === 'link' && (
-              <a href={el.href} className="text-primary hover:underline" onClick={(e) => e.preventDefault()}>
+              <a href={el.href} className="hover:underline" onClick={(e) => e.preventDefault()}>
                 {el.content}
               </a>
             )}
             {el.type === 'image' && (
               <img src={el.content} alt="Элемент" className="max-w-[200px] h-auto" />
+            )}
+            
+            {selectedElement === el.id && el.type !== 'image' && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="absolute -top-10 left-0 h-7 text-xs gap-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Icon name="Settings" size={12} />
+                    Стили
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 bg-card border-border" onClick={(e) => e.stopPropagation()}>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Размер шрифта: {el.fontSize || 16}px</Label>
+                      <Slider
+                        value={[el.fontSize || 16]}
+                        onValueChange={(v) => updateElementStyle(el.id, { fontSize: v[0] })}
+                        min={8}
+                        max={72}
+                        step={1}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-xs">Цвет текста</Label>
+                      <Input
+                        type="color"
+                        value={el.color || '#ffffff'}
+                        onChange={(e) => updateElementStyle(el.id, { color: e.target.value })}
+                        className="w-full h-10 cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">Жирность: {el.fontWeight || 400}</Label>
+                      <Slider
+                        value={[el.fontWeight || 400]}
+                        onValueChange={(v) => updateElementStyle(el.id, { fontWeight: v[0] })}
+                        min={100}
+                        max={900}
+                        step={100}
+                      />
+                    </div>
+
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="w-full gap-1"
+                      onClick={() => deleteElement(el.id)}
+                    >
+                      <Icon name="Trash2" size={14} />
+                      Удалить
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+            
+            {selectedElement === el.id && el.type === 'image' && (
+              <Button
+                size="sm"
+                variant="destructive"
+                className="absolute -top-10 left-0 h-7 text-xs gap-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteElement(el.id);
+                }}
+              >
+                <Icon name="Trash2" size={12} />
+                Удалить
+              </Button>
             )}
           </div>
         ))}
