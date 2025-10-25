@@ -358,55 +358,90 @@ export default function Index() {
         <div className="space-y-4 animate-fade-in">
           <div className="bg-card rounded-lg border border-border overflow-hidden gamer-glow">
             <Tabs defaultValue="html" className="w-full">
-              <TabsList className="w-full justify-start rounded-none border-b border-border bg-muted/30 p-0">
-                <TabsTrigger 
-                  value="html" 
-                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-none border-r border-border transition-all"
-                >
-                  <Icon name="FileCode" size={16} className="mr-2" />
-                  HTML
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="css"
-                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-none border-r border-border transition-all"
-                >
-                  <Icon name="Palette" size={16} className="mr-2" />
-                  CSS
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="js"
-                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-none transition-all"
-                >
-                  <Icon name="Zap" size={16} className="mr-2" />
-                  JS
-                </TabsTrigger>
+              <TabsList className="w-full justify-between rounded-none border-b border-border bg-muted/30 p-0">
+                <div className="flex">
+                  <TabsTrigger 
+                    value="html" 
+                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-none border-r border-border transition-all"
+                  >
+                    <Icon name="FileCode" size={16} className="mr-2" />
+                    HTML
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="css"
+                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-none border-r border-border transition-all"
+                  >
+                    <Icon name="Palette" size={16} className="mr-2" />
+                    CSS
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="js"
+                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-none transition-all"
+                  >
+                    <Icon name="Zap" size={16} className="mr-2" />
+                    JS
+                  </TabsTrigger>
+                </div>
               </TabsList>
 
               <TabsContent value="html" className="m-0 p-0">
-                <textarea
-                  value={html}
-                  onChange={(e) => setHtml(e.target.value)}
-                  className="w-full h-[500px] bg-background text-foreground font-mono text-sm p-4 resize-none focus:outline-none border-0"
-                  spellCheck={false}
-                />
+                <div className="relative">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="absolute top-2 right-2 z-10 gap-1 text-xs h-7 bg-background/80 hover:bg-background"
+                    onClick={() => triggerFileInput(htmlInputRef)}
+                  >
+                    <Icon name="Upload" size={14} />
+                    Импорт HTML
+                  </Button>
+                  <textarea
+                    value={html}
+                    onChange={(e) => setHtml(e.target.value)}
+                    className="w-full h-[500px] bg-background text-foreground font-mono text-sm p-4 resize-none focus:outline-none border-0"
+                    spellCheck={false}
+                  />
+                </div>
               </TabsContent>
 
               <TabsContent value="css" className="m-0 p-0">
-                <textarea
-                  value={css}
-                  onChange={(e) => setCss(e.target.value)}
-                  className="w-full h-[500px] bg-background text-foreground font-mono text-sm p-4 resize-none focus:outline-none border-0"
-                  spellCheck={false}
-                />
+                <div className="relative">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="absolute top-2 right-2 z-10 gap-1 text-xs h-7 bg-background/80 hover:bg-background"
+                    onClick={() => triggerFileInput(cssInputRef)}
+                  >
+                    <Icon name="Upload" size={14} />
+                    Импорт CSS
+                  </Button>
+                  <textarea
+                    value={css}
+                    onChange={(e) => setCss(e.target.value)}
+                    className="w-full h-[500px] bg-background text-foreground font-mono text-sm p-4 resize-none focus:outline-none border-0"
+                    spellCheck={false}
+                  />
+                </div>
               </TabsContent>
 
               <TabsContent value="js" className="m-0 p-0">
-                <textarea
-                  value={js}
-                  onChange={(e) => setJs(e.target.value)}
-                  className="w-full h-[500px] bg-background text-foreground font-mono text-sm p-4 resize-none focus:outline-none border-0"
-                  spellCheck={false}
-                />
+                <div className="relative">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="absolute top-2 right-2 z-10 gap-1 text-xs h-7 bg-background/80 hover:bg-background"
+                    onClick={() => triggerFileInput(jsInputRef)}
+                  >
+                    <Icon name="Upload" size={14} />
+                    Импорт JS
+                  </Button>
+                  <textarea
+                    value={js}
+                    onChange={(e) => setJs(e.target.value)}
+                    className="w-full h-[500px] bg-background text-foreground font-mono text-sm p-4 resize-none focus:outline-none border-0"
+                    spellCheck={false}
+                  />
+                </div>
               </TabsContent>
             </Tabs>
           </div>
