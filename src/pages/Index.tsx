@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
+import JSZip from 'jszip';
 
 const DEFAULT_HTML = `<!DOCTYPE html>
 <html lang="ru">
@@ -246,6 +247,29 @@ export default function Index() {
     navigator.clipboard.writeText(publishedUrl);
   };
 
+  const handleExportZip = async () => {
+    const zip = new JSZip();
+    
+    zip.file('index.html', html);
+    zip.file('styles.css', css);
+    zip.file('script.js', js);
+    
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'plut-studio-project.zip';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Проект экспортирован! 📦",
+      description: "ZIP архив успешно скачан",
+    });
+  };
+
   const handleFileImport = (type: 'html' | 'css' | 'js', file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -310,6 +334,15 @@ export default function Index() {
               Telegram
             </Button>
             <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-secondary/50 hover:border-secondary transition-all"
+              onClick={handleExportZip}
+            >
+              <Icon name="Download" size={16} />
+              Экспорт ZIP
+            </Button>
+            <Button
               size="sm"
               className="gap-2 bg-primary hover:bg-primary/90 gamer-glow-blue animate-glow-pulse"
               onClick={handlePublish}
@@ -337,6 +370,17 @@ export default function Index() {
                 >
                   <Icon name="Send" size={16} />
                   Telegram
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 justify-start border-secondary/50"
+                  onClick={() => {
+                    handleExportZip();
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Icon name="Download" size={16} />
+                  Экспорт ZIP
                 </Button>
                 <Button
                   className="w-full gap-2 justify-start bg-primary hover:bg-primary/90"
