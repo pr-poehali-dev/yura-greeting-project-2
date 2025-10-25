@@ -1,10 +1,13 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
+import VisualBuilder from '@/components/VisualBuilder';
 
 const DEFAULT_HTML = `<!DOCTYPE html>
 <html lang="ru">
@@ -209,21 +212,44 @@ document.addEventListener('DOMContentLoaded', () => {
 });`;
 
 export default function Index() {
-  const [html, setHtml] = useState(DEFAULT_HTML);
-  const [css, setCss] = useState(DEFAULT_CSS);
-  const [js, setJs] = useState(DEFAULT_JS);
+  const [html, setHtml] = useState(() => localStorage.getItem('plut-html') || DEFAULT_HTML);
+  const [css, setCss] = useState(() => localStorage.getItem('plut-css') || DEFAULT_CSS);
+  const [js, setJs] = useState(() => localStorage.getItem('plut-js') || DEFAULT_JS);
+  const [favicon, setFavicon] = useState(() => localStorage.getItem('plut-favicon') || '');
+  const [backgroundColor, setBackgroundColor] = useState(() => localStorage.getItem('plut-bg-color') || '#1a1f2c');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'code' | 'builder'>('code');
   const { toast } = useToast();
   
   const htmlInputRef = useRef<HTMLInputElement>(null);
   const cssInputRef = useRef<HTMLInputElement>(null);
   const jsInputRef = useRef<HTMLInputElement>(null);
+  const faviconInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem('plut-html', html);
+    localStorage.setItem('plut-css', css);
+    localStorage.setItem('plut-js', js);
+    localStorage.setItem('plut-favicon', favicon);
+    localStorage.setItem('plut-bg-color', backgroundColor);
+  }, [html, css, js, favicon, backgroundColor]);
+
+  useEffect(() => {
+    if (favicon) {
+      const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement || document.createElement('link');
+      link.type = 'image/x-icon';
+      link.rel = 'icon';
+      link.href = favicon;
+      document.getElementsByTagName('head')[0].appendChild(link);
+    }
+  }, [favicon]);
 
   const generatePreview = () => {
     return `
       <!DOCTYPE html>
       <html>
         <head>
+          ${favicon ? `<link rel="icon" type="image/x-icon" href="${favicon}">` : ''}
           <style>${css}</style>
         </head>
         <body>
@@ -250,7 +276,21 @@ export default function Index() {
   const handleExportZip = async () => {
     const zip = new JSZip();
     
-    zip.file('index.html', html);
+    const fullHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  ${favicon ? `<link rel="icon" type="image/x-icon" href="${favicon}">` : ''}
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+${html}
+<script src="script.js"></script>
+</body>
+</html>`;
+    
+    zip.file('index.html', fullHtml);
     zip.file('styles.css', css);
     zip.file('script.js', js);
     
@@ -268,6 +308,19 @@ export default function Index() {
       title: "Проект экспортирован! 📦",
       description: "ZIP архив успешно скачан",
     });
+  };
+
+  const handleFaviconUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      setFavicon(dataUrl);
+      toast({
+        title: "Favicon обновлен! ✅",
+        description: file.name,
+      });
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleFileImport = (type: 'html' | 'css' | 'js', file: File) => {
@@ -313,6 +366,13 @@ export default function Index() {
         className="hidden"
         onChange={(e) => e.target.files?.[0] && handleFileImport('js', e.target.files[0])}
       />
+      <input
+        ref={faviconInputRef}
+        type="file"
+        accept=".ico,.png,.jpg,.svg"
+        className="hidden"
+        onChange={(e) => e.target.files?.[0] && handleFaviconUpload(e.target.files[0])}
+      />
 
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -324,6 +384,15 @@ export default function Index() {
           </div>
 
           <div className="hidden md:flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-primary/50 hover:border-primary transition-all"
+              onClick={() => triggerFileInput(faviconInputRef)}
+            >
+              <Icon name="Image" size={16} />
+              Favicon
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -360,6 +429,17 @@ export default function Index() {
             </SheetTrigger>
             <SheetContent side="right" className="w-64 bg-card border-border">
               <div className="flex flex-col gap-3 mt-8">
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 justify-start border-primary/50"
+                  onClick={() => {
+                    triggerFileInput(faviconInputRef);
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Icon name="Image" size={16} />
+                  Favicon
+                </Button>
                 <Button
                   variant="outline"
                   className="w-full gap-2 justify-start border-primary/50"
@@ -542,18 +622,54 @@ export default function Index() {
 
         <div className="space-y-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
           <div className="bg-card rounded-lg border border-border overflow-hidden gamer-glow-blue">
-            <div className="bg-muted/30 p-3 border-b border-border flex items-center gap-2">
-              <Icon name="Eye" size={18} className="text-secondary" />
-              <h3 className="font-semibold">Превью</h3>
+            <div className="bg-muted/30 p-3 border-b border-border flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Icon name="Eye" size={18} className="text-secondary" />
+                <h3 className="font-semibold">Превью</h3>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant={activeTab === 'code' ? 'default' : 'outline'}
+                  className="h-7 text-xs"
+                  onClick={() => setActiveTab('code')}
+                >
+                  Код
+                </Button>
+                <Button
+                  size="sm"
+                  variant={activeTab === 'builder' ? 'default' : 'outline'}
+                  className="h-7 text-xs"
+                  onClick={() => setActiveTab('builder')}
+                >
+                  Конструктор
+                </Button>
+              </div>
             </div>
-            <div className="bg-white">
-              <iframe
-                srcDoc={generatePreview()}
-                className="w-full h-[600px] border-0"
-                title="Preview"
-                sandbox="allow-scripts"
+            {activeTab === 'code' ? (
+              <div className="bg-white">
+                <iframe
+                  srcDoc={generatePreview()}
+                  className="w-full h-[600px] border-0"
+                  title="Preview"
+                  sandbox="allow-scripts"
+                />
+              </div>
+            ) : (
+              <VisualBuilder
+                onSave={(newHtml, newCss) => {
+                  setHtml(newHtml);
+                  setCss(newCss);
+                  setActiveTab('code');
+                  toast({
+                    title: "Код обновлен! ✅",
+                    description: "Конструктор сохранил изменения в код",
+                  });
+                }}
+                backgroundColor={backgroundColor}
+                onBackgroundChange={setBackgroundColor}
               />
-            </div>
+            )}
           </div>
         </div>
       </main>
